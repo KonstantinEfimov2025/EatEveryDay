@@ -3,45 +3,60 @@ package com.example.eateveryday
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.example.eateveryday.navigation.Screen
+import com.example.eateveryday.navigation.SetupNavGraph
 import com.example.eateveryday.ui.theme.EatEveryDayTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             EatEveryDayTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MainScreen()
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun MainScreen() {
+    val navController = rememberNavController()
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    EatEveryDayTheme {
-        Greeting("Android")
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+                    label = { Text("Дневник") },
+                    selected = false, // Позже добавим логику выбора
+                    onClick = { navController.navigate(Screen.Diary.route) }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    label = { Text("Поиск") },
+                    selected = false,
+                    onClick = { navController.navigate(Screen.Search.route) }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                    label = { Text("Рандом") },
+                    selected = false,
+                    onClick = { navController.navigate(Screen.Random.route) }
+                )
+            }
+        }
+    ) { innerPadding ->
+        Surface(modifier = Modifier.padding(innerPadding)) {
+            SetupNavGraph(navController = navController)
+        }
     }
 }
