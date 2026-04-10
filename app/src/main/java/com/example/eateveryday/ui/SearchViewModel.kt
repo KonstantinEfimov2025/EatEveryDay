@@ -18,24 +18,35 @@ class SearchViewModel : ViewModel() {
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
+    private val _selectedMeal = mutableStateOf<Meal?>(null)
+    val selectedMeal: State<Meal?> = _selectedMeal
+
     private var searchJob: Job? = null
 
     fun searchMeals(query: String) {
         if (query.length < 3) return
-
-        // Отменяем предыдущий запрос, если юзер быстро печатает дальше
         searchJob?.cancel()
-
         searchJob = viewModelScope.launch {
             _isLoading.value = true
             try {
-                Log.d("SearchVM", "Запуск запроса для: $query")
                 val response = RetrofitInstance.api.searchMeals(query)
                 _searchResults.value = response.meals ?: emptyList()
-                Log.d("SearchVM", "Успех! Блюд: ${response.meals?.size ?: 0}")
             } catch (e: Exception) {
-                Log.e("SearchVM", "Ошибка: ${e.localizedMessage}")
                 _searchResults.value = emptyList()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun loadMealDetails(id: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = RetrofitInstance.api.getMealDetails(id)
+                _selectedMeal.value = response.meals?.firstOrNull()
+            } catch (e: Exception) {
+                Log.e("SearchVM", "Ошибка загрузки деталей: ${e.message}")
             } finally {
                 _isLoading.value = false
             }

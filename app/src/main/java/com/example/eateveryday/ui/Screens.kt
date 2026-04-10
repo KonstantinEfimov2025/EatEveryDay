@@ -4,7 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,7 +43,7 @@ fun SearchScreen(
                 query = it
                 if (it.length > 2) viewModel.searchMeals(it)
             },
-            label = { Text("Поиск (Chicken, Beef...)") },
+            label = { Text("Поиск (на англ.)") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -93,17 +95,77 @@ fun MealItem(meal: Meal, onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RandomMealScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Случайное блюдо")
+fun MealDetailScreen(
+    mealId: String?,
+    navController: NavHostController,
+    viewModel: SearchViewModel = viewModel()
+) {
+    val meal by viewModel.selectedMeal
+    val isLoading by viewModel.isLoading
+
+    LaunchedEffect(mealId) {
+        mealId?.let { viewModel.loadMealDetails(it) }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(meal?.name ?: "Загрузка...") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Text("<", style = MaterialTheme.typography.headlineSmall)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            meal?.let { selectedMeal ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    AsyncImage(
+                        model = selectedMeal.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth().height(250.dp),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Column(Modifier.padding(16.dp)) {
+                        Text(text = selectedMeal.name, style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            text = "Категория: ${selectedMeal.category}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Text(text = "Инструкция", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = selectedMeal.instructions ?: "Нет описания",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun MealDetailScreen(mealId: String?, navController: NavHostController) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "ID блюда: $mealId")
-        Button(onClick = { navController.popBackStack() }) { Text("Назад") }
+fun RandomMealScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = "Случайное блюдо")
     }
 }
