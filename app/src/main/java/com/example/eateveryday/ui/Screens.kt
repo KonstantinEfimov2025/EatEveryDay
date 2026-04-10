@@ -7,26 +7,29 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.eateveryday.models.Meal
+import com.example.eateveryday.navigation.Screen
 
 @Composable
 fun DiaryScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Здесь будет список съеденного")
+        Text(text = "Список съеденного")
     }
 }
 
 @Composable
-fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
+fun SearchScreen(
+    navController: NavHostController,
+    viewModel: SearchViewModel = viewModel()
+) {
     var query by remember { mutableStateOf("") }
     val meals by viewModel.searchResults
     val isLoading by viewModel.isLoading
@@ -38,7 +41,7 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
                 query = it
                 if (it.length > 2) viewModel.searchMeals(it)
             },
-            label = { Text("Поиск блюда (на англ.)") },
+            label = { Text("Поиск (Chicken, Beef...)") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -53,7 +56,7 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(meals) { meal ->
                     MealItem(meal = meal, onClick = {
-                        println("Clicked on ${meal.name}")
+                        navController.navigate(Screen.Details.passId(meal.id))
                     })
                 }
             }
@@ -77,14 +80,14 @@ fun MealItem(meal: Meal, onClick: () -> Unit) {
         ) {
             AsyncImage(
                 model = meal.imageUrl,
-                contentDescription = meal.name,
+                contentDescription = null,
                 modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(text = meal.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                Text(text = meal.category ?: "Common", style = MaterialTheme.typography.bodySmall)
+                Text(text = meal.name, style = MaterialTheme.typography.titleMedium)
+                Text(text = meal.category ?: "", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -93,13 +96,14 @@ fun MealItem(meal: Meal, onClick: () -> Unit) {
 @Composable
 fun RandomMealScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Здесь будет случайное блюдо")
+        Text(text = "Случайное блюдо")
     }
 }
 
 @Composable
-fun MealDetailScreen(mealId: String?) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Детали блюда с ID: $mealId")
+fun MealDetailScreen(mealId: String?, navController: NavHostController) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = "ID блюда: $mealId")
+        Button(onClick = { navController.popBackStack() }) { Text("Назад") }
     }
 }

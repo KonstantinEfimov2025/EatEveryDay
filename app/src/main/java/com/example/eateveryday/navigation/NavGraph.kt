@@ -19,14 +19,14 @@ fun SetupNavGraph(navController: NavHostController) {
             DiaryScreen()
         }
         composable(route = Screen.Search.route) {
-            SearchScreen()
+            SearchScreen(navController = navController)
         }
         composable(route = Screen.Random.route) {
             RandomMealScreen()
         }
         composable(route = Screen.Details.route) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("mealId")
-            MealDetailScreen(mealId = id)
+            MealDetailScreen(mealId = id, navController = navController)
         }
     }
 }
