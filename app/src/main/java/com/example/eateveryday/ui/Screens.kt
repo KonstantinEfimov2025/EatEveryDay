@@ -1,19 +1,28 @@
 package com.example.eateveryday.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.eateveryday.models.Meal
-import androidx.compose.runtime.getValue
 
 @Composable
 fun DiaryScreen() {
-    Text(text = "Здесь будет список съеденного")
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = "Здесь будет список съеденного")
+    }
 }
 
 @Composable
@@ -37,20 +46,15 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(16.dp))
 
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(meals) { meal ->
-                    Text(
-                        text = meal.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    HorizontalDivider()
+                    MealItem(meal = meal, onClick = {
+                        println("Clicked on ${meal.name}")
+                    })
                 }
             }
         }
@@ -58,11 +62,44 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
 }
 
 @Composable
+fun MealItem(meal: Meal, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = meal.imageUrl,
+                contentDescription = meal.name,
+                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(text = meal.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(text = meal.category ?: "Common", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
 fun RandomMealScreen() {
-    Text(text = "Здесь будет случайное блюдо")
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = "Здесь будет случайное блюдо")
+    }
 }
 
 @Composable
 fun MealDetailScreen(mealId: String?) {
-    Text(text = "Детали блюда с ID: $mealId")
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = "Детали блюда с ID: $mealId")
+    }
 }
