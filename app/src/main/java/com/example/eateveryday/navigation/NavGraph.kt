@@ -1,16 +1,16 @@
 package com.example.eateveryday.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.eateveryday.ui.DiaryScreen
-import com.example.eateveryday.ui.SearchScreen
-import com.example.eateveryday.ui.RandomMealScreen
-import com.example.eateveryday.ui.MealDetailScreen
+import com.example.eateveryday.ui.*
 
 @Composable
 fun SetupNavGraph(navController: NavHostController) {
+    val searchViewModel: SearchViewModel = viewModel()
+
     NavHost(
         navController = navController,
         startDestination = Screen.Diary.route
@@ -19,14 +19,13 @@ fun SetupNavGraph(navController: NavHostController) {
             DiaryScreen()
         }
         composable(route = Screen.Search.route) {
-            SearchScreen(navController = navController)
+            SearchScreen(navController, searchViewModel)
         }
         composable(route = Screen.Random.route) {
             RandomMealScreen()
         }
-        composable(route = Screen.Details.route) { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("mealId")
-            MealDetailScreen(mealId = id, navController = navController)
+        composable(route = Screen.Details.route) {
+            MealDetailScreen(navController, searchViewModel)
         }
     }
 }
