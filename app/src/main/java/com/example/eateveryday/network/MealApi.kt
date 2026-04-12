@@ -14,4 +14,14 @@ interface MealApi {
         @Query("app_key") appKey: String = "58385588ca7271a643169288240907cd",
         @Header("Edamam-Account-User") userId: String = "06a14cea"
     ): EdamamResponse
+
+    @GET("api/recipes/v2")
+    suspend fun getRandomMeal(
+        @Query("q") query: String,
+        @Query("type") type: String = "public",
+        @Query("app_id") appId: String = "06a14cea",
+        @Query("app_key") appKey: String = "58385588ca7271a643169288240907cd",
+        @Query("random") random: Boolean = true,
+        @Header("Edamam-Account-User") userId: String = "06a14cea"
+    ): EdamamResponse
 }
