@@ -28,8 +28,11 @@ fun SetupNavGraph(navController: NavHostController) {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Diary.route
+        startDestination = Screen.Splash.route
     ) {
+        composable(route = Screen.Splash.route) {
+            SplashScreen(navController = navController)
+        }
         composable(route = Screen.Diary.route) {
             DiaryScreen(viewModel = diaryViewModel)
         }
@@ -70,41 +73,25 @@ fun RandomMealScreen(diaryViewModel: DiaryViewModel) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        fetchRandomRecipe()
-    }
+    LaunchedEffect(Unit) { fetchRandomRecipe() }
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (isRefreshing) {
             CircularProgressIndicator()
         } else {
             recipe?.let { r ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(24.dp)
-                ) {
-                    Text(
-                        text = "Random Idea",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                    Text("Random Idea", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(24.dp))
                     AsyncImage(
                         model = r.image,
                         contentDescription = null,
-                        modifier = Modifier
-                            .size(280.dp)
-                            .clip(RoundedCornerShape(20.dp)),
+                        modifier = Modifier.size(280.dp).clip(RoundedCornerShape(20.dp)),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = r.label,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text(r.label, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(32.dp))
-
                     Button(
                         onClick = {
                             diaryViewModel.addEntry(
@@ -117,19 +104,13 @@ fun RandomMealScreen(diaryViewModel: DiaryViewModel) {
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Add to Diary")
-                    }
-
+                    ) { Text("Add to Diary") }
                     Spacer(Modifier.height(12.dp))
-
                     OutlinedButton(
                         onClick = { fetchRandomRecipe() },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("New Recipe")
-                    }
+                    ) { Text("New Recipe") }
                 }
             } ?: Text("Failed to load recipe. Try again.")
         }

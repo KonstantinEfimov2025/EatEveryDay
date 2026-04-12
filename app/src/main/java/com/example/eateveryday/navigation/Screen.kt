@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
+    object Splash : Screen("splash_screen", "Welcome", Icons.Default.Info)
     object Diary : Screen("diary_screen", "Diary", Icons.Default.DateRange)
     object Search : Screen("search_screen", "Search", Icons.Default.Search)
     object Random : Screen("random_screen", "Random", Icons.Default.Refresh)
