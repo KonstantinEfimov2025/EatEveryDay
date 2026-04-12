@@ -16,13 +16,38 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.example.eateveryday.models.DiaryEntry
 import com.example.eateveryday.models.EdamamRecipe
 import com.example.eateveryday.navigation.Screen
 
 @Composable
-fun DiaryScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Diary")
+fun DiaryScreen(viewModel: DiaryViewModel) {
+    val items by viewModel.diaryItems.collectAsState()
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Text("Мой Дневник", style = MaterialTheme.typography.headlineLarge)
+            Spacer(Modifier.height(16.dp))
+        }
+        items(items) { item ->
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    AsyncImage(
+                        model = item.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.size(50.dp).clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(item.title, style = MaterialTheme.typography.titleMedium)
+                        Text("${item.calories} ккал", style = MaterialTheme.typography.bodySmall)
+                    }
+                    IconButton(onClick = { viewModel.removeEntry(item) }) {
+                        Text("✕")
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -30,7 +55,6 @@ fun DiaryScreen() {
 fun SearchScreen(navController: NavHostController, viewModel: SearchViewModel) {
     var query by remember { mutableStateOf("") }
     val recipes by viewModel.searchResults
-    val isLoading by viewModel.isLoading
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         OutlinedTextField(
@@ -39,23 +63,67 @@ fun SearchScreen(navController: NavHostController, viewModel: SearchViewModel) {
                 query = it
                 if (it.length > 2) viewModel.searchMeals(it)
             },
-            label = { Text("Search Recipes") },
+            label = { Text("Поиск рецептов") },
             modifier = Modifier.fillMaxWidth()
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        LazyColumn {
+            items(recipes) { recipe ->
+                RecipeItem(recipe) {
+                    viewModel.selectRecipe(recipe)
+                    navController.navigate(Screen.Details.route)
+                }
             }
-        } else {
-            LazyColumn {
-                items(recipes) { recipe ->
-                    RecipeItem(recipe) {
-                        viewModel.selectRecipe(recipe)
-                        navController.navigate(Screen.Details.route)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MealDetailScreen(
+    navController: NavHostController,
+    searchViewModel: SearchViewModel,
+    diaryViewModel: DiaryViewModel
+) {
+    val recipe by searchViewModel.selectedRecipe
+
+    recipe?.let { r ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Детали") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) { Text("<") }
                     }
+                )
+            }
+        ) { padding ->
+            Column(Modifier.padding(padding).verticalScroll(rememberScrollState())) {
+                AsyncImage(
+                    model = r.image,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(250.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Column(Modifier.padding(16.dp)) {
+                    Text(r.label, style = MaterialTheme.typography.headlineMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            diaryViewModel.addEntry(
+                                DiaryEntry(
+                                    title = r.label,
+                                    imageUrl = r.image,
+                                    calories = r.calories.toInt()
+                                )
+                            )
+                        }
+                    ) {
+                        Text("Добавить в дневник")
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text("Ингредиенты:", style = MaterialTheme.typography.titleLarge)
+                    r.ingredientLines.forEach { Text("• $it", Modifier.padding(vertical = 2.dp)) }
                 }
             }
         }
@@ -65,66 +133,17 @@ fun SearchScreen(navController: NavHostController, viewModel: SearchViewModel) {
 @Composable
 fun RecipeItem(recipe: EdamamRecipe, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickable { onClick() },
-        shape = RoundedCornerShape(12.dp)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onClick() }
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = recipe.image,
                 contentDescription = null,
-                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(recipe.label, style = MaterialTheme.typography.titleMedium)
-                Text("${recipe.calories.toInt()} kcal", style = MaterialTheme.typography.bodySmall)
-            }
+            Spacer(Modifier.width(12.dp))
+            Text(recipe.label, style = MaterialTheme.typography.titleMedium)
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MealDetailScreen(navController: NavHostController, viewModel: SearchViewModel) {
-    val recipe by viewModel.selectedRecipe
-
-    recipe?.let { r ->
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(r.label) },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Text("<")
-                        }
-                    }
-                )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier.padding(padding).verticalScroll(rememberScrollState())
-            ) {
-                AsyncImage(
-                    model = r.image,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(300.dp),
-                    contentScale = ContentScale.Crop
-                )
-                Column(Modifier.padding(16.dp)) {
-                    Text("Ingredients", style = MaterialTheme.typography.headlineSmall)
-                    r.ingredientLines.forEach { line ->
-                        Text("• $line", modifier = Modifier.padding(vertical = 4.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RandomMealScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Random")
     }
 }
