@@ -7,12 +7,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -24,26 +28,47 @@ import com.example.eateveryday.navigation.Screen
 fun DiaryScreen(viewModel: DiaryViewModel) {
     val items by viewModel.diaryItems.collectAsState()
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         item {
-            Text("Мой Дневник", style = MaterialTheme.typography.headlineLarge)
+            Text(
+                text = "Food Diary",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(16.dp))
         }
+
+        if (items.isEmpty()) {
+            item {
+                Box(Modifier.fillParentMaxHeight(0.7f), contentAlignment = Alignment.Center) {
+                    Text("Your diary is empty", color = MaterialTheme.colorScheme.outline)
+                }
+            }
+        }
+
         items(items) { item ->
-            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     AsyncImage(
                         model = item.imageUrl,
                         contentDescription = null,
-                        modifier = Modifier.size(50.dp).clip(RoundedCornerShape(8.dp))
+                        modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(item.title, style = MaterialTheme.typography.titleMedium)
-                        Text("${item.calories} ккал", style = MaterialTheme.typography.bodySmall)
+                        Text(item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("${item.calories} kcal", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
                     }
                     IconButton(onClick = { viewModel.removeEntry(item) }) {
-                        Text("✕")
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -63,10 +88,13 @@ fun SearchScreen(navController: NavHostController, viewModel: SearchViewModel) {
                 query = it
                 if (it.length > 2) viewModel.searchMeals(it)
             },
-            label = { Text("Поиск рецептов") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Search for recipes") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
         )
-        LazyColumn {
+        Spacer(Modifier.height(16.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(recipes) { recipe ->
                 RecipeItem(recipe) {
                     viewModel.selectRecipe(recipe)
@@ -90,9 +118,11 @@ fun MealDetailScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Детали") },
+                    title = { Text("Recipe Details") },
                     navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) { Text("<") }
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 )
             }
@@ -101,14 +131,15 @@ fun MealDetailScreen(
                 AsyncImage(
                     model = r.image,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(250.dp),
+                    modifier = Modifier.fillMaxWidth().height(300.dp),
                     contentScale = ContentScale.Crop
                 )
-                Column(Modifier.padding(16.dp)) {
-                    Text(r.label, style = MaterialTheme.typography.headlineMedium)
-                    Spacer(Modifier.height(8.dp))
+                Column(Modifier.padding(20.dp)) {
+                    Text(r.label, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("${r.calories.toInt()} kcal", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(16.dp))
                     Button(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
                         onClick = {
                             diaryViewModel.addEntry(
                                 DiaryEntry(
@@ -117,13 +148,17 @@ fun MealDetailScreen(
                                     calories = r.calories.toInt()
                                 )
                             )
-                        }
+                        },
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Добавить в дневник")
+                        Text("Add to Diary")
                     }
-                    Spacer(Modifier.height(16.dp))
-                    Text("Ингредиенты:", style = MaterialTheme.typography.titleLarge)
-                    r.ingredientLines.forEach { Text("• $it", Modifier.padding(vertical = 2.dp)) }
+                    Spacer(Modifier.height(24.dp))
+                    Text("Ingredients", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    r.ingredientLines.forEach { line ->
+                        Text("• $line", modifier = Modifier.padding(vertical = 4.dp))
+                    }
                 }
             }
         }
@@ -133,17 +168,18 @@ fun MealDetailScreen(
 @Composable
 fun RecipeItem(recipe: EdamamRecipe, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onClick() }
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = recipe.image,
                 contentDescription = null,
-                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(70.dp).clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(Modifier.width(12.dp))
-            Text(recipe.label, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.width(16.dp))
+            Text(recipe.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
         }
     }
 }

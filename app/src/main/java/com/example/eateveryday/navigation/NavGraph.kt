@@ -7,6 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -17,6 +19,7 @@ import com.example.eateveryday.models.DiaryEntry
 import com.example.eateveryday.models.EdamamRecipe
 import com.example.eateveryday.network.RetrofitInstance
 import com.example.eateveryday.ui.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun SetupNavGraph(navController: NavHostController) {
@@ -49,49 +52,86 @@ fun SetupNavGraph(navController: NavHostController) {
 @Composable
 fun RandomMealScreen(diaryViewModel: DiaryViewModel) {
     var recipe by remember { mutableStateOf<EdamamRecipe?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        try {
-            val response = RetrofitInstance.api.getRandomMeal(
-                query = listOf("Chicken", "Salad", "Pasta").random()
-            )
-            recipe = response.hits.randomOrNull()?.recipe
-        } catch (e: Exception) {
-            recipe = null
+    val fetchRandomRecipe = {
+        scope.launch {
+            isRefreshing = true
+            try {
+                val queries = listOf("Chicken", "Salad", "Pasta", "Fish", "Beef", "Soup")
+                val response = RetrofitInstance.api.getRandomMeal(query = queries.random())
+                recipe = response.hits.randomOrNull()?.recipe
+            } catch (e: Exception) {
+                recipe = null
+            } finally {
+                isRefreshing = false
+            }
         }
     }
 
+    LaunchedEffect(Unit) {
+        fetchRandomRecipe()
+    }
+
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        recipe?.let { r ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Случайное блюдо", style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(16.dp))
-                AsyncImage(
-                    model = r.image,
-                    contentDescription = null,
-                    modifier = Modifier.size(250.dp).clip(RoundedCornerShape(16.dp))
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(r.label, style = MaterialTheme.typography.titleLarge)
-                Spacer(Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        diaryViewModel.addEntry(
-                            DiaryEntry(
-                                title = r.label,
-                                imageUrl = r.image,
-                                calories = r.calories.toInt()
-                            )
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
+        if (isRefreshing) {
+            CircularProgressIndicator()
+        } else {
+            recipe?.let { r ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(24.dp)
                 ) {
-                    Text("Добавить в дневник")
+                    Text(
+                        text = "Random Idea",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    AsyncImage(
+                        model = r.image,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(280.dp)
+                            .clip(RoundedCornerShape(20.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = r.label,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(32.dp))
+
+                    Button(
+                        onClick = {
+                            diaryViewModel.addEntry(
+                                DiaryEntry(
+                                    title = r.label,
+                                    imageUrl = r.image,
+                                    calories = r.calories.toInt()
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Add to Diary")
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = { fetchRandomRecipe() },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("New Recipe")
+                    }
                 }
-            }
-        } ?: CircularProgressIndicator()
+            } ?: Text("Failed to load recipe. Try again.")
+        }
     }
 }
